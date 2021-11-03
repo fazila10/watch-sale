@@ -1,4 +1,4 @@
-package com.accenture.imaginea.Requests;
+package com.accenture.imaginea.requests;
 
 public class RequestPath {
     private RequestPath(){

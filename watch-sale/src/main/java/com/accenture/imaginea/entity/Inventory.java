@@ -19,6 +19,6 @@ public class Inventory {
     private int stockAvailable;
 
     @OneToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "productId", referencedColumnName = "productId",unique = true)
+    @JoinColumn(name = "productId", referencedColumnName = "productId",unique = true,foreignKey = @ForeignKey(name = "productId"))
     private Product product;
 }

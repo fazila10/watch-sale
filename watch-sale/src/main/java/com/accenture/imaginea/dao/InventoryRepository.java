@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory,Integer> {
 
-    @Query
-    Inventory findByProduct(Product product);
+    @Query("SELECT i FROM Inventory i WHERE i.product.id = :productId")
+    Inventory findByProductId(Integer productId);
 }

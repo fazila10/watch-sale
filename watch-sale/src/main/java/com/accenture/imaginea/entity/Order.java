@@ -21,11 +21,11 @@ public class Order {
     private double total;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.MERGE)
-    @JoinColumn(name = "productId", referencedColumnName = "productId",updatable=false)
+    @JoinColumn(name = "productId", referencedColumnName = "productId",updatable=false,foreignKey = @ForeignKey(name = "productId"))
     private Product product;
 
     @ManyToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "regId", referencedColumnName = "regId")
+    @JoinColumn(name = "regId", referencedColumnName = "regId",foreignKey = @ForeignKey(name = "regId"))
     private Registration registration;
 
 }

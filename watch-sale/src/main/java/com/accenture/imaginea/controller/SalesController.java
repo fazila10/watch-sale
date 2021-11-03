@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.accenture.imaginea.Requests.RequestPath.*;
+import static com.accenture.imaginea.requests.RequestPath.*;
 
 @RestController
 public class SalesController {
@@ -51,7 +51,7 @@ public class SalesController {
     }
 
     //Registration
-    @PostMapping(REGISTRATIONS+"/{id}")
+    @PostMapping(REGISTRATIONS)
     public ResponseEntity<String> register (@RequestBody RegistrationInputDto registrationInputDto){
         return new ResponseEntity<>(salesService.register(registrationInputDto), HttpStatus.CREATED);
     }

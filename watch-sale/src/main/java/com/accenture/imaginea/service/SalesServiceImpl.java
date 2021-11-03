@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -42,11 +41,9 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public List<ProductDto> getAllProducts() {
         List<Product> productEntities = productRepository.findAll();
-        List<ProductDto> products = productEntities
-                                            .stream()
-                                            .map(product -> productMapper.entityToDto(product))
-                                            .collect(Collectors.toList());
-        return products;
+        return productEntities.stream()
+                .map(product -> productMapper.entityToDto(product))
+                .collect(Collectors.toList());
     }
 
     private ProductDto findProduct(Integer productId) {
@@ -80,13 +77,13 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public String deleteProduct(Integer productId) {
         String output = "Product with id-"+productId+" cannot be found";
-        if(findProduct(productId)!=null){
-            Product product = productMapper.dtoToEntity(findProduct(productId));
-            Inventory inventory = inventoryRepository.findByProduct(product);
+        ProductDto productDto = findProduct(productId);
+        if(productDto!=null){
+            Inventory inventory = inventoryRepository.findByProductId(productId);
             if(inventory!=null) {
                 inventoryRepository.delete(inventory);
             }
-            productRepository.delete(product);
+            productRepository.delete(productMapper.dtoToEntity(productDto));
             output = "Product with id-"+productId+" successfully deleted";
         }
         return output;
@@ -114,18 +111,18 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public List<UserDto> getAllUsers() {
         List<User> userEntities = userRepository.findAll();
-        List<UserDto> userList = userEntities.stream()
-                                             .map(user -> userMapper.entityToDto(user))
-                                             .collect(Collectors.toList());
-        return userList;
+        return userEntities.stream()
+                .map(user -> userMapper.entityToDto(user))
+                .collect(Collectors.toList());
     }
 
     //Registration
     @Override
     public String register(RegistrationInputDto registrationInputDto) {
         String reg = "User does not exist, Please Sign Up to continue";
-        if(findUser(registrationInputDto.getUserId())!=null){
-            RegistrationDto registrationDto = RegistrationDto.builder().userDto(findUser(registrationInputDto.getUserId())).build();
+        UserDto userDto = findUser(registrationInputDto.getUserId());
+        if(userDto!=null){
+            RegistrationDto registrationDto = RegistrationDto.builder().userDto(userDto).build();
             Registration register = registrationMapper.dtoToEntity(registrationDto);
             RegistrationDto registerDto = registrationMapper.entityToDto(registrationRepository.save(register));
             reg = "Registration successful, Your Registration Id is " + registerDto.getRegId();
@@ -146,19 +143,19 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public List<RegistrationDto> getAllRegistrations() {
         List<Registration> registrationEntities = registrationRepository.findAll();
-        List<RegistrationDto> registrationList = registrationEntities.stream()
+        return registrationEntities.stream()
                 .map(registration -> registrationMapper.entityToDto(registration))
                 .collect(Collectors.toList());
-       return registrationList;
     }
 
     //Inventory
     @Override
     public String addItems(InventoryInputDto inventoryInputDto) {
         String item = "Product does not exist, Please check the Product Id";
-        if(findProduct(inventoryInputDto.getProductId())!=null){
+        ProductDto productDto = findProduct(inventoryInputDto.getProductId());
+        if(productDto!=null){
             InventoryDto inventoryDto = InventoryDto.builder()
-                    .productDto(findProduct(inventoryInputDto.getProductId()))
+                    .productDto(productDto)
                     .stockAvailable(inventoryInputDto.getStockAvailable())
                     .totalNumber(inventoryInputDto.getTotalNumber())
                     .build();
@@ -170,80 +167,70 @@ public class SalesServiceImpl implements SalesService {
     }
 
     private InventoryDto findItem(Integer inventoryId) {
-        Optional<Inventory> inventoryCheck = inventoryRepository.findById(inventoryId);
-        if (inventoryCheck.isPresent()) {
-            Inventory inventory = inventoryRepository.getById(inventoryId);
-            InventoryDto inventoryDto = inventoryMapper.entityToDto(inventory);
-            return inventoryDto;
-        } else {
-            return null;
+        Optional<Inventory> inventory = inventoryRepository.findById(inventoryId);
+        InventoryDto inventoryDto = null;
+        if (inventory.isPresent()) {
+            inventoryDto = inventoryMapper.entityToDto(inventory.get());
         }
+            return inventoryDto;
     }
 
     @Override
     public InventoryDto updateItems(Integer inventoryId, InventoryInputDto inventoryInputDto) {
-        InventoryDto updatedDto = null;
-        if(findItem(inventoryId) != null){
-            InventoryDto inventoryDto = InventoryDto.builder()
-                    .totalNumber(inventoryInputDto.getTotalNumber())
-                    .stockAvailable(inventoryInputDto.getStockAvailable())
-                    .productDto(findItem(inventoryId).getProductDto())
-                    .inventoryId(inventoryId).build();
-            Inventory updated = inventoryRepository.save(inventoryMapper.dtoToEntity(inventoryDto));
-            updatedDto = inventoryMapper.entityToDto(updated);
+        InventoryDto inventoryDto = findItem(inventoryId);
+        if(inventoryDto != null){
+            inventoryDto.setTotalNumber(inventoryInputDto.getTotalNumber());
+            inventoryDto.setStockAvailable(inventoryInputDto.getStockAvailable());
+            inventoryRepository.save(inventoryMapper.dtoToEntity(inventoryDto));
         }
-        return updatedDto;
+        return inventoryDto;
     }
 
     @Override
     public boolean reduceStock(Integer productId) {
-        boolean stock = true;
-        Product product = productRepository.getById(productId);
-        if(inventoryRepository.findByProduct(product)==null){
-            stock = false;
+        boolean stock = false;
+        Inventory inventory = inventoryRepository.findByProductId(productId);
+        if(inventory!=null){
+            int count=inventory.getStockAvailable();
+            if(count>0){
+                inventory.setStockAvailable(count-1);
+                inventoryRepository.save(inventory);
+                stock = true;
+            }
         }
-        Inventory inventory = inventoryRepository.findByProduct(product);
-        int count=inventory.getStockAvailable();
-        if(count<=0){
-            stock = false;
-        }
-        inventory.setStockAvailable(count-1);
-        inventoryRepository.save(inventory);
         return stock;
     }
 
     @Override
     public List<InventoryDto> getAllItems() {
         List<Inventory> inventoryEntities = inventoryRepository.findAll();
-        List<InventoryDto> inventoryList = inventoryEntities.stream()
-                                                  .map(inventory -> inventoryMapper.entityToDto(inventory))
-                                                  .collect(Collectors.toList());
-        return  inventoryList;
+        return inventoryEntities.stream()
+                .map(inventory -> inventoryMapper.entityToDto(inventory))
+                .collect(Collectors.toList());
     }
 
     //Order
     @Override
     public String placeOrder(OrderInputDto orderInputDto) {
-        String output = null;
-        if(findRegistration(orderInputDto.getRegistrationId())==null){
+        String output;
+        RegistrationDto registrationDto = findRegistration(orderInputDto.getRegistrationId());
+        ProductDto productDto = findProduct(orderInputDto.getProductId());
+        if(registrationDto==null){
             output = "User does not registered, Please register to continue";
         }
-        else if(findProduct(orderInputDto.getProductId())==null){
+        else if(productDto==null){
             output= "The product does not exist, Please enter the correct product Id";
         }
         else {
             OrderDto orderDto = OrderDto.builder()
-                    .productDto(findProduct(orderInputDto.getProductId()))
-                    .registrationDto(findRegistration(orderInputDto.getRegistrationId()))
-                    .total(findProduct(orderInputDto.getProductId()).getPrice())
+                    .productDto(productDto)
+                    .registrationDto(registrationDto)
+                    .total(productDto.getPrice())
                     .build();
-            Order order = orderMapper.dtoToEntity(orderDto);
-            Order newOrder = orderRepository.save(order);
 
+            Order newOrder = orderRepository.save(orderMapper.dtoToEntity(orderDto));
             OrderDto placedOrder = orderMapper.entityToDto(newOrder);
-            if (output == null) {
-                output = "Order added successfully placed with Order Id:" + placedOrder.getOrderId() + " The Bill amount is:" + placedOrder.getTotal();
-            }
+            output = "Order added successfully placed with Order Id:" + placedOrder.getOrderId() + " The Bill amount is:" + placedOrder.getTotal();
         }
         return output;
     }
@@ -251,10 +238,9 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public List<OrderDto> getAllOrders() {
         List<Order> orderEntities = orderRepository.findAll();
-        List<OrderDto> orderList = orderEntities.stream()
+        return orderEntities.stream()
                 .map(order -> orderMapper.entityToDto(order))
                 .collect(Collectors.toList());
-       return  orderList;
     }
 
     @Override

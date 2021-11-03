@@ -1,12 +1,9 @@
 package com.accenture.imaginea.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
+import lombok.*;
 import javax.persistence.*;
-import java.util.List;
+
 
 @Entity
 @Table(name="product")

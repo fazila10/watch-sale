@@ -23,7 +23,6 @@ public class Registration {
     private Date regTime;
 
     @OneToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "userId", referencedColumnName = "userId",unique = true)
+    @JoinColumn(name = "userId", referencedColumnName = "userId",unique = true,foreignKey = @ForeignKey(name = "userId"))
     private User user;
-
 }
